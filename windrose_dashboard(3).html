@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Rose Dashboard - Avalanche Forecasting</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a1128 0%, #1c2541 50%, #2d3561 100%);
+            color: #e8f1f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 3px solid #00d9ff;
+            margin-bottom: 40px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #00d9ff;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #8b9dc3;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #2d3561;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00d9ff;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #2d3561;
+            border-radius: 4px;
+            color: #e8f1f5;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00d9ff;
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #0a1128;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .status.loading {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid #ffc107;
+            color: #ffc107;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4caf50;
+            color: #4caf50;
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #2d3561;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00d9ff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .chart {
+            height: 500px;
+            width: 100%;
+        }
+
+        .instructions {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid #00d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .instructions h3 {
+            color: #00d9ff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #8b9dc3;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .instructions code {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #00d9ff;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Wind Rose Dashboard</h1>
+            <div class="subtitle">Avalanche Forecasting • Real-time Wind Analysis</div>
+        </header>
+
+        <div class="instructions">
+            <h3>Setup Instructions:</h3>
+            <ol>
+                <li>In your Google Sheet, go to <code>Extensions → Apps Script</code></li>
+                <li>Delete any existing code and paste the code from <code>serve_weather_data.js</code></li>
+                <li>Click <code>Deploy → New deployment</code></li>
+                <li>Type: <code>Web app</code></li>
+                <li>Execute as: <code>Me</code></li>
+                <li>Who has access: <code>Anyone</code></li>
+                <li>Click <code>Deploy</code> and copy the Web app URL</li>
+                <li>Paste the Web app URL below and click <code>Load Data</code></li>
+            </ol>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: #8b9dc3;">The URL will look like: <code>https://script.google.com/macros/s/AKfycby.../exec</code></p>
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <label for="webAppUrl">Google Apps Script Web App URL:</label>
+                <input type="text" id="webAppUrl" placeholder="https://script.google.com/macros/s/AKfycby.../exec">
+            </div>
+            <button onclick="loadData()">Load Data</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="charts" class="charts-grid"></div>
+    </div>
+
+    <script>
+        // Wind speed categories (mph)
+        const SPEED_RANGES = [
+            { min: 0, max: 16, label: '0-16 mph', color: '#91e5f6' },
+            { min: 16, max: 25, label: '16-25 mph', color: '#00d9ff' },
+            { min: 25, max: 38, label: '25-38 mph', color: '#0099cc' },
+            { min: 38, max: 999, label: '38+ mph', color: '#005577' }
+        ];
+
+        // 16 compass directions
+        const DIRECTIONS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                           'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function convertDirectionToDegrees(dir) {
+            if (typeof dir === 'number') return dir;
+            
+            const dirMap = {
+                'N': 0, 'NNE': 22.5, 'NE': 45, 'ENE': 67.5,
+                'E': 90, 'ESE': 112.5, 'SE': 135, 'SSE': 157.5,
+                'S': 180, 'SSW': 202.5, 'SW': 225, 'WSW': 247.5,
+                'W': 270, 'WNW': 292.5, 'NW': 315, 'NNW': 337.5
+            };
+            
+            const dirStr = String(dir).toUpperCase().trim();
+            if (dirMap[dirStr] !== undefined) return dirMap[dirStr];
+            
+            const parsed = parseFloat(dir);
+            return isNaN(parsed) ? null : parsed;
+        }
+
+        function getDirectionBin(degrees) {
+            if (degrees === null) return null;
+            const index = Math.round(degrees / 22.5) % 16;
+            return DIRECTIONS[index];
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',');
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header.trim()] = values[index]?.trim();
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
+        function processWindData(data) {
+            const stationData = {};
+            
+            // Get data from last 24 hours
+            const now = new Date();
+            const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+            
+            console.log('Processing', data.length, 'total rows');
+            console.log('Sample row:', data[0]);
+            
+            let skippedReasons = {
+                noStation: 0,
+                noWindSpeed: 0,
+                noWindDir: 0,
+                oldData: 0,
+                processed: 0
+            };
+            
+            data.forEach((row, index) => {
+                const station = row.Station;
+                const timestamp = new Date(row.Timestamp);
+                const windSpeed = parseFloat(row['Wind Speed']);
+                const windDir = row['Wind Dir'];
+                
+                if (index < 3) {
+                    console.log(`Row ${index}:`, {station, timestamp, windSpeed, windDir, raw: row});
+                }
+                
+                // Skip if missing data or outside 24hr window
+                if (!station) {
+                    skippedReasons.noStation++;
+                    return;
+                }
+                if (!windSpeed || isNaN(windSpeed)) {
+                    skippedReasons.noWindSpeed++;
+                    return;
+                }
+                if (!windDir) {
+                    skippedReasons.noWindDir++;
+                    return;
+                }
+                if (timestamp < oneDayAgo) {
+                    skippedReasons.oldData++;
+                    return;
+                }
+                
+                if (!stationData[station]) {
+                    stationData[station] = [];
+                }
+                
+                const degrees = convertDirectionToDegrees(windDir);
+                const dirBin = getDirectionBin(degrees);
+                
+                if (dirBin) {
+                    stationData[station].push({
+                        direction: dirBin,
+                        speed: windSpeed
+                    });
+                    skippedReasons.processed++;
+                }
+            });
+            
+            console.log('Skipped reasons:', skippedReasons);
+            console.log('Stations with data:', Object.keys(stationData));
+            
+            return stationData;
+        }
+
+        function createWindRoseData(readings) {
+            // Initialize bins
+            const bins = {};
+            DIRECTIONS.forEach(dir => {
+                bins[dir] = SPEED_RANGES.map(() => 0);
+            });
+            
+            // Count occurrences
+            readings.forEach(reading => {
+                const dir = reading.direction;
+                const speed = reading.speed;
+                
+                // Find which speed range
+                for (let i = 0; i < SPEED_RANGES.length; i++) {
+                    const range = SPEED_RANGES[i];
+                    if (speed >= range.min && speed < range.max) {
+                        bins[dir][i]++;
+                        break;
+                    }
+                }
+            });
+            
+            // Convert counts to percentages
+            const total = readings.length;
+            const series = SPEED_RANGES.map((range, rangeIndex) => {
+                return {
+                    name: range.label,
+                    data: DIRECTIONS.map(dir => {
+                        return (bins[dir][rangeIndex] / total * 100).toFixed(1);
+                    }),
+                    color: range.color
+                };
+            });
+            
+            return series;
+        }
+
+        function createWindRoseChart(station, readings, containerId) {
+            const series = createWindRoseData(readings);
+            
+            Highcharts.chart(containerId, {
+                chart: {
+                    polar: true,
+                    type: 'column',
+                    backgroundColor: 'transparent'
+                },
+                title: {
+                    text: null
+                },
+                pane: {
+                    size: '85%'
+                },
+                legend: {
+                    align: 'right',
+                    verticalAlign: 'top',
+                    y: 100,
+                    layout: 'vertical',
+                    itemStyle: {
+                        color: '#e8f1f5'
+                    }
+                },
+                xAxis: {
+                    categories: DIRECTIONS,
+                    tickmarkPlacement: 'on',
+                    lineWidth: 0,
+                    labels: {
+                        style: {
+                            color: '#00d9ff',
+                            fontWeight: 'bold',
+                            fontSize: '11px'
+                        }
+                    }
+                },
+                yAxis: {
+                    min: 0,
+                    endOnTick: false,
+                    showLastLabel: true,
+                    title: {
+                        text: 'Frequency (%)',
+                        style: {
+                            color: '#8b9dc3'
+                        }
+                    },
+                    labels: {
+                        formatter: function () {
+                            return this.value + '%';
+                        },
+                        style: {
+                            color: '#8b9dc3'
+                        }
+                    },
+                    reversedStacks: false,
+                    gridLineColor: 'rgba(139, 157, 195, 0.2)'
+                },
+                tooltip: {
+                    valueSuffix: '%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    borderColor: '#00d9ff',
+                    style: {
+                        color: '#e8f1f5'
+                    }
+                },
+                plotOptions: {
+                    series: {
+                        stacking: 'normal',
+                        shadow: false,
+                        groupPadding: 0,
+                        pointPlacement: 'on',
+                        borderWidth: 0
+                    }
+                },
+                series: series
+            });
+        }
+
+        async function loadData() {
+            const webAppUrl = document.getElementById('webAppUrl').value.trim();
+            
+            if (!webAppUrl) {
+                showStatus('Please enter your Web App URL', 'error');
+                return;
+            }
+            
+            showStatus('Loading data from Google Sheets...', 'loading');
+            
+            try {
+                const response = await fetch(webAppUrl);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data from Web App. Make sure it is deployed correctly.');
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                if (data.length === 0) {
+                    throw new Error('No data found in sheet');
+                }
+                
+                const stationData = processWindData(data);
+                const stationNames = Object.keys(stationData);
+                
+                if (stationNames.length === 0) {
+                    throw new Error('No wind data found in last 24 hours. Make sure your logging script has been running and collecting data.');
+                }
+                
+                showStatus(`Loaded ${data.length} readings from ${stationNames.length} stations (last 24 hours)`, 'success');
+                
+                // Clear previous charts
+                const chartsDiv = document.getElementById('charts');
+                chartsDiv.innerHTML = '';
+                
+                // Create a chart for each station
+                stationNames.forEach((station, index) => {
+                    const readings = stationData[station];
+                    
+                    if (readings.length < 5) {
+                        console.log(`Skipping ${station} - not enough data (${readings.length} readings)`);
+                        return;
+                    }
+                    
+                    const containerId = `chart-${index}`;
+                    const chartDiv = document.createElement('div');
+                    chartDiv.className = 'chart-container';
+                    chartDiv.innerHTML = `
+                        <div class="chart-title">${station}</div>
+                        <div class="chart" id="${containerId}"></div>
+                    `;
+                    chartsDiv.appendChild(chartDiv);
+                    
+                    createWindRoseChart(station, readings, containerId);
+                });
+                
+                setTimeout(hideStatus, 5000);
+                
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        // Auto-load if URL is in localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('webAppUrl');
+            if (savedUrl) {
+                document.getElementById('webAppUrl').value = savedUrl;
+            }
+        });
+
+        // Save URL to localStorage when loading
+        const originalLoadData = loadData;
+        loadData = function() {
+            const webAppUrl = document.getElementById('webAppUrl').value.trim();
+            if (webAppUrl) {
+                localStorage.setItem('webAppUrl', webAppUrl);
+            }
+            return originalLoadData();
+        };
+    </script>
+</body>
+</html>
